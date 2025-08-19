@@ -9,12 +9,8 @@ class LancamentoAdmin(admin.ModelAdmin):
         'data_formatada', 
         'pix_formatado', 
         'dinheiro_formatado', 
-<<<<<<< HEAD
-        'cartao_formatado',
-=======
         'debito_formatado',
         'credito_formatado',
->>>>>>> ad6a853 (atualização de projeto)
         'total_vendas_formatado',
         'status_pagamento'
     ]
@@ -28,11 +24,7 @@ class LancamentoAdmin(admin.ModelAdmin):
             'fields': ('data',)
         }),
         ('💰 Vendas do Dia', {
-<<<<<<< HEAD
-            'fields': ('pix', 'dinheiro', 'cartao'),
-=======
             'fields': ('pix', 'dinheiro', 'cartao_debito', 'cartao_credito'),
->>>>>>> ad6a853 (atualização de projeto)
             'description': 'Informe os valores recebidos em cada forma de pagamento'
         }),
         ('📊 Resumo Automático', {
@@ -52,17 +44,10 @@ class LancamentoAdmin(admin.ModelAdmin):
             data_str = obj.data.strftime('%d/%m/%Y')
             pix_str = self.formatar_valor(obj.pix)
             dinheiro_str = self.formatar_valor(obj.dinheiro)
-<<<<<<< HEAD
-            cartao_str = self.formatar_valor(obj.cartao)
-            total_str = self.formatar_valor(obj.total_vendas)
-            vista_str = self.formatar_valor(obj.total_a_vista)
-            receber_str = self.formatar_valor(obj.total_a_receber)
-=======
             debito_str = self.formatar_valor(obj.cartao_debito)
             credito_str = self.formatar_valor(obj.cartao_credito)
             total_str = self.formatar_valor(obj.total_vendas)
             vista_str = self.formatar_valor(obj.total_a_vista)
->>>>>>> ad6a853 (atualização de projeto)
             
             html = f"""
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace;">
@@ -70,14 +55,6 @@ class LancamentoAdmin(admin.ModelAdmin):
                     💰 <strong>VENDAS DO DIA:</strong><br>
                     📱 PIX: {pix_str}<br>
                     💵 Dinheiro: {dinheiro_str}<br>
-<<<<<<< HEAD
-                    💳 Cartão: {cartao_str}<br>
-                    <hr style="margin: 10px 0;">
-                    📊 <strong>RESUMO:</strong><br>
-                    🔢 Total Vendas: <strong>{total_str}</strong><br>
-                    ├─ 💸 À vista (PIX+Dinheiro): <strong>{vista_str}</strong> → Crédito imediato<br>
-                    └─ 💳 Cartão: <strong>{receber_str}</strong> → A receber
-=======
                     💳 Cartão Débito: {debito_str}<br>
                     🔄 Cartão Crédito: {credito_str}<br>
                     <hr style="margin: 10px 0;">
@@ -85,7 +62,6 @@ class LancamentoAdmin(admin.ModelAdmin):
                     🔢 Total Vendas: <strong>{total_str}</strong><br>
                     ├─ 💸 À vista (PIX+Dinheiro+Débito): <strong>{vista_str}</strong> → Crédito imediato<br>
                     └─ 🔄 Cartão Crédito: <strong>{credito_str}</strong> → Processamento bancário
->>>>>>> ad6a853 (atualização de projeto)
                 </div>
             """
             return format_html(html)
@@ -111,13 +87,6 @@ class LancamentoAdmin(admin.ModelAdmin):
     dinheiro_formatado.short_description = "Dinheiro"
     dinheiro_formatado.admin_order_field = 'dinheiro'
 
-<<<<<<< HEAD
-    def cartao_formatado(self, obj):
-        valor_str = self.formatar_valor(obj.cartao)
-        return format_html('<span style="color: #ffc107;">💳 {}</span>', valor_str)
-    cartao_formatado.short_description = "Cartão"
-    cartao_formatado.admin_order_field = 'cartao'
-=======
     def debito_formatado(self, obj):
         valor_str = self.formatar_valor(obj.cartao_debito)
         return format_html('<span style="color: #6f42c1;">💳 {}</span>', valor_str)
@@ -129,7 +98,6 @@ class LancamentoAdmin(admin.ModelAdmin):
         return format_html('<span style="color: #fd7e14;">🔄 {}</span>', valor_str)
     credito_formatado.short_description = "Crédito"
     credito_formatado.admin_order_field = 'cartao_credito'
->>>>>>> ad6a853 (atualização de projeto)
 
     def total_vendas_formatado(self, obj):
         valor_str = self.formatar_valor(obj.total_vendas)
@@ -137,14 +105,6 @@ class LancamentoAdmin(admin.ModelAdmin):
     total_vendas_formatado.short_description = "Total Vendas"
 
     def status_pagamento(self, obj):
-<<<<<<< HEAD
-        if obj.total_a_vista > obj.total_a_receber:
-            return format_html('<span style="color: #28a745; font-weight: bold;">✅ Majoritariamente à vista</span>')
-        elif obj.total_a_receber > obj.total_a_vista:
-            return format_html('<span style="color: #ffc107; font-weight: bold;">⏳ Majoritariamente a receber</span>')
-        else:
-            return format_html('<span style="color: #17a2b8; font-weight: bold;">⚖️ Equilibrado</span>')
-=======
         if obj.total_a_vista > obj.total_credito:
             return format_html(
                 '<span style="color: #28a745; font-weight: bold;">✅ Majoritariamente à vista</span>'
@@ -157,7 +117,6 @@ class LancamentoAdmin(admin.ModelAdmin):
             return format_html(
                 '<span style="color: #17a2b8; font-weight: bold;">⚖️ Equilibrado</span>'
             )
->>>>>>> ad6a853 (atualização de projeto)
     status_pagamento.short_description = "Status"
 
     def changelist_view(self, request, extra_context=None):
@@ -169,30 +128,18 @@ class LancamentoAdmin(admin.ModelAdmin):
             stats = qs.aggregate(
                 total_pix=Sum('pix'),
                 total_dinheiro=Sum('dinheiro'),
-<<<<<<< HEAD
-                total_cartao=Sum('cartao')
-            )
-            
-            total_geral = (stats['total_pix'] or 0) + (stats['total_dinheiro'] or 0) + (stats['total_cartao'] or 0)
-            total_a_vista = (stats['total_pix'] or 0) + (stats['total_dinheiro'] or 0)
-=======
                 total_debito=Sum('cartao_debito'),
                 total_credito=Sum('cartao_credito')
             )
             
             total_geral = (stats['total_pix'] or 0) + (stats['total_dinheiro'] or 0) + (stats['total_debito'] or 0) + (stats['total_credito'] or 0)
             total_a_vista = (stats['total_pix'] or 0) + (stats['total_dinheiro'] or 0) + (stats['total_debito'] or 0)
->>>>>>> ad6a853 (atualização de projeto)
             
             response.context_data['summary'] = {
                 'total_pix': stats['total_pix'] or 0,
                 'total_dinheiro': stats['total_dinheiro'] or 0,
-<<<<<<< HEAD
-                'total_cartao': stats['total_cartao'] or 0,
-=======
                 'total_debito': stats['total_debito'] or 0,
                 'total_credito': stats['total_credito'] or 0,
->>>>>>> ad6a853 (atualização de projeto)
                 'total_geral': total_geral,
                 'total_a_vista': total_a_vista,
                 'count': qs.count()
