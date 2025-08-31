@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block title %}Lançamentos - Sistema de Gestão{% endblock %}
+{% block page_title %}Lançamentos{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2 class="mb-3">
+            <i class="fas fa-chart-line me-2"></i>
+            Lançamentos de Vendas
+        </h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{% url 'lancamento_create' %}" class="btn btn-success">
+            <i class="fas fa-plus me-2"></i>
+            Novo Lançamento
+        </a>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="data_inicio" class="form-label">Data Início</label>
+                <input type="date" class="form-control" id="data_inicio" name="data_inicio" value="{{ filtros.data_inicio|default:'' }}">
+            </div>
+            <div class="col-md-3">
+                <label for="data_fim" class="form-label">Data Fim</label>
+                <input type="date" class="form-control" id="data_fim" name="data_fim" value="{{ filtros.data_fim|default:'' }}">
+            </div>
+            <div class="col-md-6">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search me-1"></i>
+                    Filtrar
+                </button>
+                <a href="{% url 'lancamentos_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>
+                    Limpar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Estatísticas -->
+<div class="row mb-4">
+    {% for stat in stats_list %}
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="card text-center border-{{ stat.color }}">
+            <div class="card-body">
+                <h5 class="text-{{ stat.color }}">R$ {{ stat.value|floatformat:2 }}</h5>
+                <small class="text-muted">{{ stat.label }}</small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Lista de Lançamentos -->
+<div class="card">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-list me-2"></i>
+            Lançamentos ({{ stats.count }} registros)
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        {% if lancamentos %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Data</th>
+                        <th class="text-end">PIX</th>
+                        <th class="text-end">Dinheiro</th>
+                        <th class="text-end">Débito</th>
+                        <th class="text-end">Crédito</th>
+                        <th class="text-end">Total</th>
+                        <th width="120">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lancamento in lancamentos %}
+                    <tr>
+                        <td>
+                            <strong>{{ lancamento.data|date:"d/m/Y" }}</strong><br>
+                            <small class="text-muted">{{ lancamento.data|date:"l" }}</small>
+                        </td>
+                        <td class="text-end text-success">R$ {{ lancamento.pix|floatformat:2 }}</td>
+                        <td class="text-end text-info">R$ {{ lancamento.dinheiro|floatformat:2 }}</td>
+                        <td class="text-end text-primary">R$ {{ lancamento.cartao_debito|floatformat:2 }}</td>
+                        <td class="text-end text-warning">R$ {{ lancamento.cartao_credito|floatformat:2 }}</td>
+                        <td class="text-end">
+                            <strong>R$ {{ lancamento.total_vendas|floatformat:2 }}</strong><br>
+                            {% if lancamento.total_a_vista > lancamento.total_credito %}
+                                <span class="badge bg-success">Majoritário à vista</span>
+                            {% elif lancamento.total_credito > lancamento.total_a_vista %}
+                                <span class="badge bg-warning">Majoritário crédito</span>
+                            {% else %}
+                                <span class="badge bg-info">Equilibrado</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'lancamento_edit' lancamento.pk %}" class="btn btn-outline-primary" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-danger" onclick="deleteLancamento({{ lancamento.pk }})" title="Excluir">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginação -->
+        {% if lancamentos.has_other_pages %}
+        <div class="card-footer bg-white">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    {% if lancamentos.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ lancamentos.previous_page_number }}{% if filtros.data_inicio %}&data_inicio={{ filtros.data_inicio }}{% endif %}{% if filtros.data_fim %}&data_fim={{ filtros.data_fim }}{% endif %}">Anterior</a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in lancamentos.paginator.page_range %}
+                        {% if lancamentos.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > lancamentos.number|add:'-3' and num < lancamentos.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if filtros.data_inicio %}&data_inicio={{ filtros.data_inicio }}{% endif %}{% if filtros.data_fim %}&data_fim={{ filtros.data_fim }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if lancamentos.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ lancamentos.next_page_number }}{% if filtros.data_inicio %}&data_inicio={{ filtros.data_inicio }}{% endif %}{% if filtros.data_fim %}&data_fim={{ filtros.data_fim }}{% endif %}">Próxima</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-chart-line fa-4x text-muted mb-4"></i>
+            <h4 class="text-muted">Nenhum lançamento encontrado</h4>
+            <p class="text-muted">Comece criando seu primeiro lançamento de vendas.</p>
+            <a href="{% url 'lancamento_create' %}" class="btn btn-success btn-lg">
+                <i class="fas fa-plus me-2"></i>
+                Criar Primeiro Lançamento
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteLancamento(id) {
+    document.getElementById('deleteForm').action = `/lancamentos/${id}/excluir/`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (!document.getElementById('data_inicio').value && !document.getElementById('data_fim').value) {
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        document.getElementById('data_inicio').value = firstDay.toISOString().split('T')[0];
+        document.getElementById('data_fim').value = today.toISOString().split('T')[0];
+    }
+});
+</script>
+{% endblock %}

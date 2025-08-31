@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalhes da Compra - Sistema de Gestão{% endblock %}
+{% block page_title %}Detalhes da Compra{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'compras_list' %}">Compras</a></li>
+                <li class="breadcrumb-item active">Detalhes</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-eye me-2"></i>
+                    Detalhes da Compra #{{ compra.id }}
+                </h4>
+                <div>
+                    <a href="{% url 'compra_edit' compra.pk %}" class="btn btn-light btn-sm me-2">
+                        <i class="fas fa-edit me-1"></i>
+                        Editar
+                    </a>
+                    <button type="button" 
+                            class="btn btn-danger btn-sm" 
+                            onclick="deleteCompra({{ compra.pk }}, '{{ compra.fornecedor.nome }}')"
+                            title="Excluir">
+                        <i class="fas fa-trash me-1"></i>
+                        Excluir
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <div class="row">
+                    <!-- Informações Principais -->
+                    <div class="col-md-6">
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Informações da Compra
+                        </h5>
+                        
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">
+                                    <i class="fas fa-calendar me-2"></i>Data:
+                                </th>
+                                <td>
+                                    <strong>{{ compra.data_compra|date:"d/m/Y" }}</strong>
+                                    <small class="text-muted">({{ compra.data_compra|date:"l" }})</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <i class="fas fa-store me-2"></i>Fornecedor:
+                                </th>
+                                <td>
+                                    <strong>{{ compra.fornecedor.nome }}</strong>
+                                    {% if compra.fornecedor.contato %}
+                                        <br><small class="text-muted">{{ compra.fornecedor.contato }}</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <i class="fas fa-pen me-2"></i>Descrição:
+                                </th>
+                                <td>{{ compra.descricao }}</td>
+                            </tr>
+                            {% if compra.observacoes %}
+                            <tr>
+                                <th>
+                                    <i class="fas fa-sticky-note me-2"></i>Observações:
+                                </th>
+                                <td>{{ compra.observacoes }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <th>
+                                    <i class="fas fa-clock me-2"></i>Criado em:
+                                </th>
+                                <td>
+                                    {{ compra.created_at|date:"d/m/Y H:i" }}
+                                    {% if compra.updated_at != compra.created_at %}
+                                        <br><small class="text-muted">Atualizado em: {{ compra.updated_at|date:"d/m/Y H:i" }}</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <!-- Informações Financeiras -->
+                    <div class="col-md-6">
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-dollar-sign me-2"></i>
+                            Informações Financeiras
+                        </h5>
+                        
+                        <div class="card bg-light mb-3">
+                            <div class="card-body text-center">
+                                <h2 class="text-danger mb-2">R$ {{ compra.valor_total|floatformat:2 }}</h2>
+                                <p class="text-muted mb-0">Valor Total da Compra</p>
+                            </div>
+                        </div>
+                        
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="50%">
+                                    <i class="fas fa-credit-card me-2"></i>Forma de Pagamento:
+                                </th>
+                                <td>
+                                    {% if compra.forma_pagamento == 'dinheiro' %}
+                                        <span class="badge bg-success fs-6">💵 {{ compra.get_forma_pagamento_display }}</span>
+                                    {% elif compra.forma_pagamento == 'pix' %}
+                                        <span class="badge bg-info fs-6">📱 {{ compra.get_forma_pagamento_display }}</span>
+                                    {% elif compra.forma_pagamento == 'debito' %}
+                                        <span class="badge bg-primary fs-6">💳 {{ compra.get_forma_pagamento_display }}</span>
+                                    {% elif compra.forma_pagamento == 'credito' %}
+                                        <span class="badge bg-warning fs-6">🔄 {{ compra.get_forma_pagamento_display }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            
+                            {% if compra.forma_pagamento == 'credito' %}
+                            <tr>
+                                <th>
+                                    <i class="fas fa-credit-card me-2"></i>Cartão:
+                                </th>
+                                <td>
+                                    <strong>{{ compra.cartao_credito.nome }}</strong>
+                                    {% if compra.cartao_credito.limite %}
+                                        <br><small class="text-muted">Limite: R$ {{ compra.cartao_credito.limite|floatformat:2 }}</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <i class="fas fa-list-ol me-2"></i>Parcelas:
+                                </th>
+                                <td>
+                                    <strong>{{ compra.parcelas }}x sem juros</strong>
+                                    <br><small class="text-muted">{{ compra.parcelas }}x de R$ {{ compra.valor_parcela|floatformat:2 }}</small>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            
+                            <tr>
+                                <th>
+                                    <i class="fas fa-info-circle me-2"></i>Status:
+                                </th>
+                                <td>
+                                    {% if compra.sai_saldo_imediato %}
+                                        <span class="badge bg-success">✅ Pago (saldo imediato)</span>
+                                        <br><small class="text-success">Valor debitado imediatamente do saldo</small>
+                                    {% else %}
+                                        <span class="badge bg-warning">⏳ Parcelado em {{ compra.parcelas }}x</span>
+                                        <br><small class="text-warning">Valor será debitado conforme vencimento das parcelas</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <!-- Resumo Visual -->
+                <div class="row">
+                    <div class="col-12">
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Resumo da Transação
+                        </h5>
+                        
+                        <div class="card bg-dark text-white">
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-md-3">
+                                        <div class="border-end border-light">
+                                            <h4 class="mb-1">{{ compra.data_compra|date:"d/m/Y" }}</h4>
+                                            <small>Data da Compra</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="border-end border-light">
+                                            <h4 class="mb-1">{{ compra.fornecedor.nome|truncatechars:15 }}</h4>
+                                            <small>Fornecedor</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="border-end border-light">
+                                            <h4 class="mb-1 text-danger">R$ {{ compra.valor_total|floatformat:2 }}</h4>
+                                            <small>Valor Total</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <h4 class="mb-1">{{ compra.get_forma_pagamento_display }}</h4>
+                                        <small>Forma de Pagamento</small>
+                                    </div>
+                                </div>
+                                
+                                {% if compra.forma_pagamento == 'credito' %}
+                                <hr class="border-light">
+                                <div class="text-center">
+                                    <h5 class="text-warning">
+                                        Parcelamento: {{ compra.parcelas }}x de R$ {{ compra.valor_parcela|floatformat:2 }} 
+                                        no {{ compra.cartao_credito.nome }}
+                                    </h5>
+                                    <p class="mb-0">
+                                        <small>Vencimento da fatura: todo dia {{ compra.cartao_credito.vencimento_fatura }}</small>
+                                    </p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if compra.descricao|length > 100 or compra.observacoes %}
+                <hr>
+                
+                <!-- Detalhes Adicionais -->
+                <div class="row">
+                    <div class="col-12">
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-file-alt me-2"></i>

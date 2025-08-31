@@ -1,0 +1,415 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Sistema de Gestão{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'compras_list' %}">Compras</a></li>
+                <li class="breadcrumb-item active">{{ title }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-{% if action == 'create' %}plus{% else %}edit{% endif %} me-2"></i>
+                    {{ title }}
+                </h4>
+            </div>
+            
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Informações Básicas -->
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Informações da Compra
+                            </h5>
+                            
+                            <!-- Fornecedor -->
+                            <div class="mb-3">
+                                <label for="fornecedor" class="form-label fw-bold">
+                                    <i class="fas fa-store me-2"></i>Fornecedor *
+                                </label>
+                                <select 
+                                    class="form-select form-select-lg" 
+                                    id="fornecedor" 
+                                    name="fornecedor"
+                                    required
+                                >
+                                    <option value="">Selecione o fornecedor</option>
+                                    {% for fornecedor in fornecedores %}
+                                        <option value="{{ fornecedor.id }}" 
+                                                {% if compra and compra.fornecedor.id == fornecedor.id %}selected{% endif %}>
+                                            {{ fornecedor.nome }}
+                                            {% if fornecedor.contato %} - {{ fornecedor.contato }}{% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Escolha o fornecedor da compra</div>
+                                <div class="invalid-feedback">
+                                    Por favor, selecione um fornecedor.
+                                </div>
+                            </div>
+
+                            <!-- Data da Compra -->
+                            <div class="mb-3">
+                                <label for="data_compra" class="form-label fw-bold">
+                                    <i class="fas fa-calendar me-2"></i>Data da Compra *
+                                </label>
+                                <input 
+                                    type="date" 
+                                    class="form-control form-control-lg" 
+                                    id="data_compra" 
+                                    name="data_compra"
+                                    value="{% if compra %}{{ compra.data_compra|date:'Y-m-d' }}{% endif %}"
+                                    required
+                                >
+                                <div class="form-text">Data em que a compra foi realizada</div>
+                                <div class="invalid-feedback">
+                                    Por favor, informe a data da compra.
+                                </div>
+                            </div>
+
+                            <!-- Valor Total -->
+                            <div class="mb-4">
+                                <label for="valor_total" class="form-label fw-bold">
+                                    <i class="fas fa-dollar-sign me-2"></i>Valor Total *
+                                </label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text bg-success text-white">R$</span>
+                                    <input 
+                                        type="number" 
+                                        class="form-control" 
+                                        id="valor_total" 
+                                        name="valor_total"
+                                        value="{% if compra %}{{ compra.valor_total }}{% endif %}"
+                                        min="0.01" 
+                                        step="0.01"
+                                        placeholder="0,00"
+                                        required
+                                    >
+                                </div>
+                                <div class="form-text">Valor total da compra em reais</div>
+                                <div class="invalid-feedback">
+                                    Por favor, informe um valor válido maior que zero.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Forma de Pagamento -->
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">
+                                <i class="fas fa-credit-card me-2"></i>
+                                Forma de Pagamento
+                            </h5>
+
+                            <!-- Forma de Pagamento -->
+                            <div class="mb-3">
+                                <label for="forma_pagamento" class="form-label fw-bold">
+                                    <i class="fas fa-money-bill-wave me-2"></i>Pagamento *
+                                </label>
+                                <select 
+                                    class="form-select form-select-lg" 
+                                    id="forma_pagamento" 
+                                    name="forma_pagamento"
+                                    required
+                                    onchange="toggleCreditoFields()"
+                                >
+                                    <option value="">Selecione a forma de pagamento</option>
+                                    {% for key, value in FORMA_PAGAMENTO_CHOICES %}
+                                        <option value="{{ key }}" 
+                                                {% if compra and compra.forma_pagamento == key %}selected{% endif %}>
+                                            {{ value }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Como foi realizado o pagamento</div>
+                                <div class="invalid-feedback">
+                                    Por favor, selecione uma forma de pagamento.
+                                </div>
+                            </div>
+
+                            <!-- Campos específicos para Crédito -->
+                            <div id="credito-fields" style="display: none;">
+                                <!-- Cartão de Crédito -->
+                                <div class="mb-3">
+                                    <label for="cartao_credito" class="form-label">
+                                        <i class="fas fa-credit-card me-2"></i>Cartão de Crédito *
+                                    </label>
+                                    <select 
+                                        class="form-select" 
+                                        id="cartao_credito" 
+                                        name="cartao_credito"
+                                    >
+                                        <option value="">Selecione o cartão</option>
+                                        {% for cartao in cartoes %}
+                                            <option value="{{ cartao.id }}"
+                                                    {% if compra and compra.cartao_credito and compra.cartao_credito.id == cartao.id %}selected{% endif %}>
+                                                {{ cartao.nome }}
+                                                {% if cartao.limite %} - Limite: R$ {{ cartao.limite|floatformat:2 }}{% endif %}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Cartão utilizado para a compra</div>
+                                </div>
+
+                                <!-- Parcelas -->
+                                <div class="mb-3">
+                                    <label for="parcelas" class="form-label">
+                                        <i class="fas fa-list-ol me-2"></i>Parcelas *
+                                    </label>
+                                    <select 
+                                        class="form-select" 
+                                        id="parcelas" 
+                                        name="parcelas"
+                                        onchange="calculateParcela()"
+                                    >
+                                        {% for key, value in PARCELAS_CHOICES %}
+                                            <option value="{{ key }}"
+                                                    {% if compra and compra.parcelas == key %}selected{% elif key == 1 and not compra %}selected{% endif %}>
+                                                {{ value }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Número de parcelas sem juros</div>
+                                </div>
+
+                                <!-- Valor da Parcela (calculado automaticamente) -->
+                                <div class="alert alert-info" id="parcela-info" style="display: none;">
+                                    <i class="fas fa-calculator me-2"></i>
+                                    <strong>Valor da Parcela:</strong> <span id="valor-parcela">R$ 0,00</span>
+                                </div>
+                            </div>
+
+                            <!-- Status do Pagamento -->
+                            <div class="alert alert-secondary" id="status-pagamento">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Status:</strong> <span id="status-text">Selecione uma forma de pagamento</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Descrição e Observações -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h5 class="text-primary mb-3">
+                                <i class="fas fa-file-alt me-2"></i>
+                                Descrição e Observações
+                            </h5>
+                        </div>
+
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="descricao" class="form-label fw-bold">
+                                    <i class="fas fa-pen me-2"></i>Descrição da Compra *
+                                </label>
+                                <input 
+                                    type="text" 
+                                    class="form-control form-control-lg" 
+                                    id="descricao" 
+                                    name="descricao"
+                                    value="{% if compra %}{{ compra.descricao }}{% endif %}"
+                                    maxlength="200"
+                                    placeholder="Descreva os itens comprados..."
+                                    required
+                                >
+                                <div class="form-text">Descrição detalhada dos itens comprados (máximo 200 caracteres)</div>
+                                <div class="invalid-feedback">
+                                    Por favor, informe uma descrição da compra.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="observacoes" class="form-label">
+                                    <i class="fas fa-sticky-note me-2"></i>Observações
+                                </label>
+                                <textarea 
+                                    class="form-control" 
+                                    id="observacoes" 
+                                    name="observacoes"
+                                    rows="4"
+                                    placeholder="Observações adicionais..."
+                                >{% if compra %}{{ compra.observacoes }}{% endif %}</textarea>
+                                <div class="form-text">Informações adicionais (opcional)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-white">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'compras_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Voltar
+                        </a>
+                        
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-save me-2"></i>
+                            {% if action == 'create' %}Registrar Compra{% else %}Salvar Alterações{% endif %}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Toggle credit card fields visibility
+    function toggleCreditoFields() {
+        const formaPagamento = document.getElementById('forma_pagamento').value;
+        const creditoFields = document.getElementById('credito-fields');
+        const cartaoCredito = document.getElementById('cartao_credito');
+        
+        if (formaPagamento === 'credito') {
+            creditoFields.style.display = 'block';
+            cartaoCredito.required = true;
+            calculateParcela();
+        } else {
+            creditoFields.style.display = 'none';
+            cartaoCredito.required = false;
+        }
+        
+        updatePaymentStatus();
+    }
+
+    // Calculate installment value
+    function calculateParcela() {
+        const valorTotal = parseFloat(document.getElementById('valor_total').value) || 0;
+        const parcelas = parseInt(document.getElementById('parcelas').value) || 1;
+        const formaPagamento = document.getElementById('forma_pagamento').value;
+        
+        if (formaPagamento === 'credito' && valorTotal > 0) {
+            const valorParcela = valorTotal / parcelas;
+            document.getElementById('valor-parcela').textContent = formatCurrency(valorParcela);
+            document.getElementById('parcela-info').style.display = 'block';
+        } else {
+            document.getElementById('parcela-info').style.display = 'none';
+        }
+    }
+
+    // Update payment status
+    function updatePaymentStatus() {
+        const formaPagamento = document.getElementById('forma_pagamento').value;
+        const statusText = document.getElementById('status-text');
+        const statusElement = document.getElementById('status-pagamento');
+        
+        let text = '';
+        let className = 'alert-secondary';
+        
+        switch(formaPagamento) {
+            case 'dinheiro':
+                text = '✅ Sai do saldo imediatamente';
+                className = 'alert-success';
+                break;
+            case 'pix':
+                text = '✅ Sai do saldo imediatamente';
+                className = 'alert-success';
+                break;
+            case 'debito':
+                text = '✅ Sai do saldo imediatamente';
+                className = 'alert-success';
+                break;
+            case 'credito':
+                const parcelas = document.getElementById('parcelas').value;
+                text = `⏳ Parcelado - Débito conforme vencimento das ${parcelas} parcelas`;
+                className = 'alert-warning';
+                break;
+            default:
+                text = 'Selecione uma forma de pagamento';
+                className = 'alert-secondary';
+        }
+        
+        statusText.textContent = text;
+        statusElement.className = `alert ${className}`;
+    }
+
+    // Format currency
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        }).format(value);
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set today's date if creating new
+        {% if action == 'create' %}
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('data_compra').value = today;
+        {% endif %}
+
+        // Initial setup
+        toggleCreditoFields();
+        
+        // Add event listeners
+        document.getElementById('forma_pagamento').addEventListener('change', toggleCreditoFields);
+        document.getElementById('parcelas').addEventListener('change', calculateParcela);
+        document.getElementById('valor_total').addEventListener('input', calculateParcela);
+        document.getElementById('valor_total').addEventListener('change', calculateParcela);
+    });
+
+    // Form validation
+    (function() {
+        'use strict';
+        window.addEventListener('load', function() {
+            var forms = document.getElementsByClassName('needs-validation');
+            var validation = Array.prototype.filter.call(forms, function(form) {
+                form.addEventListener('submit', function(event) {
+                    // Custom validation for credit card
+                    const formaPagamento = document.getElementById('forma_pagamento').value;
+                    const cartaoCredito = document.getElementById('cartao_credito');
+                    
+                    if (formaPagamento === 'credito' && !cartaoCredito.value) {
+                        cartaoCredito.setCustomValidity('Cartão de crédito é obrigatório para pagamento no crédito');
+                    } else {
+                        cartaoCredito.setCustomValidity('');
+                    }
+
+                    if (form.checkValidity() === false) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        }, false);
+    })();
+
+    // Character counter for description
+    document.getElementById('descricao').addEventListener('input', function() {
+        const current = this.value.length;
+        const max = 200;
+        
+        if (current > max - 20) {
+            this.nextElementSibling.textContent = `Descrição detalhada dos itens comprados (${current}/${max} caracteres)`;
+            if (current >= max) {
+                this.nextElementSibling.classList.add('text-danger');
+            } else {
+                this.nextElementSibling.classList.remove('text-danger');
+                this.nextElementSibling.classList.add('text-warning');
+            }
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Sistema de Gestão{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'lancamentos_list' %}">Lançamentos</a></li>
+                <li class="breadcrumb-item active">{{ title }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-{% if action == 'create' %}plus{% else %}edit{% endif %} me-2"></i>
+                    {{ title }}
+                </h4>
+            </div>
+            
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Data -->
+                        <div class="col-md-12 mb-4">
+                            <label for="data" class="form-label fw-bold">
+                                <i class="fas fa-calendar me-2"></i>Data do Lançamento
+                            </label>
+                            <input 
+                                type="date" 
+                                class="form-control form-control-lg" 
+                                id="data" 
+                                name="data"
+                                value="{% if lancamento %}{{ lancamento.data|date:'Y-m-d' }}{% endif %}"
+                                required
+                            >
+                            <div class="form-text">Selecione a data das vendas registradas</div>
+                            <div class="invalid-feedback">
+                                Por favor, selecione uma data válida.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5 class="text-primary mb-3">
+                        <i class="fas fa-money-bill-wave me-2"></i>
+                        Valores por Forma de Pagamento
+                    </h5>
+                    
+                    <div class="row">
+                        <!-- PIX -->
+                        <div class="col-md-6 mb-4">
+                            <label for="pix" class="form-label">
+                                <i class="fas fa-mobile-alt me-2 text-success"></i>PIX
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-success text-white">R$</span>
+                                <input 
+                                    type="number" 
+                                    class="form-control" 
+                                    id="pix" 
+                                    name="pix"
+                                    value="{% if lancamento %}{{ lancamento.pix }}{% else %}0.00{% endif %}"
+                                    min="0" 
+                                    step="0.01"
+                                    placeholder="0,00"
+                                >
+                            </div>
+                            <div class="form-text">Valor recebido via PIX</div>
+                        </div>
+
+                        <!-- Dinheiro -->
+                        <div class="col-md-6 mb-4">
+                            <label for="dinheiro" class="form-label">
+                                <i class="fas fa-money-bill-wave me-2 text-info"></i>Dinheiro
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-info text-white">R$</span>
+                                <input 
+                                    type="number" 
+                                    class="form-control" 
+                                    id="dinheiro" 
+                                    name="dinheiro"
+                                    value="{% if lancamento %}{{ lancamento.dinheiro }}{% else %}0.00{% endif %}"
+                                    min="0" 
+                                    step="0.01"
+                                    placeholder="0,00"
+                                >
+                            </div>
+                            <div class="form-text">Valor recebido em dinheiro físico</div>
+                        </div>
+
+                        <!-- Cartão Débito -->
+                        <div class="col-md-6 mb-4">
+                            <label for="cartao_debito" class="form-label">
+                                <i class="fas fa-credit-card me-2 text-primary"></i>Cartão Débito
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-primary text-white">R$</span>
+                                <input 
+                                    type="number" 
+                                    class="form-control" 
+                                    id="cartao_debito" 
+                                    name="cartao_debito"
+                                    value="{% if lancamento %}{{ lancamento.cartao_debito }}{% else %}0.00{% endif %}"
+                                    min="0" 
+                                    step="0.01"
+                                    placeholder="0,00"
+                                >
+                            </div>
+                            <div class="form-text">Valor recebido via cartão de débito</div>
+                        </div>
+
+                        <!-- Cartão Crédito -->
+                        <div class="col-md-6 mb-4">
+                            <label for="cartao_credito" class="form-label">
+                                <i class="fas fa-credit-card me-2 text-warning"></i>Cartão Crédito
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-warning text-white">R$</span>
+                                <input 
+                                    type="number" 
+                                    class="form-control" 
+                                    id="cartao_credito" 
+                                    name="cartao_credito"
+                                    value="{% if lancamento %}{{ lancamento.cartao_credito }}{% else %}0.00{% endif %}"
+                                    min="0" 
+                                    step="0.01"
+                                    placeholder="0,00"
+                                >
+                            </div>
+                            <div class="form-text">Valor recebido via cartão de crédito</div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Resumo Automático -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title text-primary">
+                                        <i class="fas fa-calculator me-2"></i>
+                                        Resumo Automático
+                                    </h6>
+                                    <div class="row text-center">
+                                        <div class="col-md-3">
+                                            <div class="border-end">
+                                                <h5 class="text-success mb-1" id="total-vista">R$ 0,00</h5>
+                                                <small class="text-muted">Total à Vista</small>
+                                                <br><small class="text-muted">(PIX + Dinheiro + Débito)</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="border-end">
+                                                <h5 class="text-warning mb-1" id="total-credito">R$ 0,00</h5>
+                                                <small class="text-muted">Total Crédito</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="border-end">
+                                                <h5 class="text-primary mb-1" id="total-cartao">R$ 0,00</h5>
+                                                <small class="text-muted">Total Cartões</small>
+                                                <br><small class="text-muted">(Débito + Crédito)</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <h4 class="text-dark mb-1" id="total-geral">R$ 0,00</h4>
+                                            <small class="text-muted"><strong>TOTAL GERAL</strong></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-white">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'lancamentos_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Voltar
+                        </a>
+                        
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-save me-2"></i>
+                            {% if action == 'create' %}Criar Lançamento{% else %}Salvar Alterações{% endif %}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Format currency display
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        }).format(value);
+    }
+
+    // Update totals in real time
+    function updateTotals() {
+        const pix = parseFloat(document.getElementById('pix').value) || 0;
+        const dinheiro = parseFloat(document.getElementById('dinheiro').value) || 0;
+        const cartao_debito = parseFloat(document.getElementById('cartao_debito').value) || 0;
+        const cartao_credito = parseFloat(document.getElementById('cartao_credito').value) || 0;
+
+        const total_vista = pix + dinheiro + cartao_debito;
+        const total_credito = cartao_credito;
+        const total_cartao = cartao_debito + cartao_credito;
+        const total_geral = pix + dinheiro + cartao_debito + cartao_credito;
+
+        document.getElementById('total-vista').textContent = formatCurrency(total_vista);
+        document.getElementById('total-credito').textContent = formatCurrency(total_credito);
+        document.getElementById('total-cartao').textContent = formatCurrency(total_cartao);
+        document.getElementById('total-geral').textContent = formatCurrency(total_geral);
+    }
+
+    // Add event listeners to all money inputs
+    document.addEventListener('DOMContentLoaded', function() {
+        const moneyInputs = ['pix', 'dinheiro', 'cartao_debito', 'cartao_credito'];
+        
+        moneyInputs.forEach(id => {
+            const input = document.getElementById(id);
+            input.addEventListener('input', updateTotals);
+            input.addEventListener('change', updateTotals);
+        });
+
+        // Set today's date if creating new
+        {% if action == 'create' %}
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('data').value = today;
+        {% endif %}
+
+        // Initial calculation
+        updateTotals();
+    });
+
+    // Form validation
+    (function() {
+        'use strict';
+        window.addEventListener('load', function() {
+            var forms = document.getElementsByClassName('needs-validation');
+            var validation = Array.prototype.filter.call(forms, function(form) {
+                form.addEventListener('submit', function(event) {
+                    // Custom validation: at least one value must be greater than 0
+                    const pix = parseFloat(document.getElementById('pix').value) || 0;
+                    const dinheiro = parseFloat(document.getElementById('dinheiro').value) || 0;
+                    const cartao_debito = parseFloat(document.getElementById('cartao_debito').value) || 0;
+                    const cartao_credito = parseFloat(document.getElementById('cartao_credito').value) || 0;
+                    
+                    const total = pix + dinheiro + cartao_debito + cartao_credito;
+                    
+                    if (total <= 0) {
+                        alert('Pelo menos um valor deve ser maior que zero.');
+                        event.preventDefault();
+                        event.stopPropagation();
+                        return false;
+                    }
+
+                    if (form.checkValidity() === false) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        }, false);
+    })();
+
+    // Auto-focus first empty input
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = ['pix', 'dinheiro', 'cartao_debito', 'cartao_credito'];
+        for (let id of inputs) {
+            const input = document.getElementById(id);
+            if (!input.value || parseFloat(input.value) === 0) {
+                input.focus();
+                break;
+            }
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}
