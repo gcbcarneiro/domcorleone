@@ -57,14 +57,10 @@ ROOT_URLCONF = 'domcorleone.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            '/root/domcorleone/templates',  # Caminho absoluto
-            os.path.join(BASE_DIR, 'templates'),  # Caminho relativo (mantém os dois)
-        ],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],  # ← ALTERADO
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
-                'django.template.context_processors.debug',  # Adicione esta linha
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
